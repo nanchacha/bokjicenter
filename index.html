@@ -12,6 +12,26 @@
         #map-container { flex-grow: 1; position: relative; }
         #map { width: 100%; height: 100vh; }
         
+        /* 토글 버튼 스타일 */
+        .toggle-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 3000;
+            background: #2c3e50;
+            color: white;
+            border: 2px solid white;
+            border-radius: 6px;
+            padding: 10px 16px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            transition: all 0.2s ease;
+        }
+        .toggle-btn:hover { background: #34495e; transform: translateY(-2px); }
+        .toggle-btn:active { transform: translateY(0); }
+
         /* 우측 사이드바 스타일 */
         #sidebar {
             width: 320px;
@@ -22,12 +42,20 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            transition: width 0.3s ease; /* 접기 애니메이션 */
         }
+        #sidebar.collapsed {
+            width: 0;
+            border: none;
+        }
+
         .sidebar-header {
             background: #2c3e50;
             color: white;
             padding: 20px 15px;
             text-align: center;
+            /* 사이드바 내용이 줄어들때 줄바꿈 방지 */
+            min-width: 320px;
         }
         .sidebar-header h3 { margin: 0; font-size: 18px; letter-spacing: 0.5px; }
         .sidebar-header p { margin: 5px 0 0 0; font-size: 13px; opacity: 0.8; }
@@ -38,6 +66,7 @@
             margin: 0;
             overflow-y: auto;
             flex-grow: 1;
+            min-width: 320px;
         }
         .office-item {
             padding: 15px 20px;
@@ -94,6 +123,8 @@
 </head>
 <body>
     <div id="map-container">
+        <!-- 접기/펴기 버튼 -->
+        <button id="toggle-sidebar" class="toggle-btn">▶ 목록 접기</button>
         <div id="map"></div>
     </div>
     
@@ -188,11 +219,13 @@
             
             // 리스트 클릭 이벤트 (해당 마커로 지도 이동 및 팝업 열기)
             li.onclick = function() {
+                // 모바일 환경 등에서 사이드바가 접혀있지 않다면, 클릭 시 자동 접기 (옵션)
+                // if (window.innerWidth <= 768 && !sidebar.classList.contains('collapsed')) { toggleBtn.click(); }
+                
                 map.flyTo([office.lat, office.lng], 15, {
                     animate: true,
                     duration: 0.8
                 });
-                // 애니메이션이 약간 진행된 후 팝업 띄우기
                 setTimeout(function() {
                     marker.openPopup();
                 }, 800);
@@ -213,6 +246,23 @@
             return div;
         };
         legend.addTo(map);
+
+        // 사이드바 접기/펴기 로직
+        var sidebar = document.getElementById('sidebar');
+        var toggleBtn = document.getElementById('toggle-sidebar');
+        
+        toggleBtn.onclick = function() {
+            sidebar.classList.toggle('collapsed');
+            if(sidebar.classList.contains('collapsed')) {
+                toggleBtn.innerHTML = '◀ 목록 펴기';
+            } else {
+                toggleBtn.innerHTML = '▶ 목록 접기';
+            }
+            // 사이드바 크기 변경(0.3s) 후 지도 크기 업데이트
+            setTimeout(function() {
+                map.invalidateSize();
+            }, 300);
+        };
 
     </script>
 </body>
