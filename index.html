@@ -7,12 +7,74 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
-        body { margin: 0; padding: 0; font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; }
-        #map { width: 100vw; height: 100vh; }
+        body { margin: 0; padding: 0; font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; display: flex; height: 100vh; overflow: hidden; }
+        
+        #map-container { flex-grow: 1; position: relative; }
+        #map { width: 100%; height: 100vh; }
+        
+        /* 우측 사이드바 스타일 */
+        #sidebar {
+            width: 320px;
+            height: 100vh;
+            background: white;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .sidebar-header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px 15px;
+            text-align: center;
+        }
+        .sidebar-header h3 { margin: 0; font-size: 18px; letter-spacing: 0.5px; }
+        .sidebar-header p { margin: 5px 0 0 0; font-size: 13px; opacity: 0.8; }
+        
+        .office-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+        .office-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .office-item:hover {
+            background: #f8f9fa;
+        }
+        .office-item b {
+            display: block;
+            font-size: 15px;
+            color: #333;
+            margin-bottom: 6px;
+        }
+        .office-item span {
+            font-size: 12px;
+            color: #2980b9;
+            background: #eaf2f8;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .office-item .desc {
+            display: block;
+            font-size: 12px;
+            color: #777;
+            margin-top: 6px;
+        }
+
+        /* 범례 스타일 */
         .legend { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.2); line-height: 1.5; z-index: 1000; position: absolute; bottom: 20px; right: 20px;}
         .legend h4 { margin: 0 0 10px; font-size: 15px; color: #333; }
         .legend i { width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.8; border-radius: 50%; }
         .legend .marker-icon { background: #e74c3c; border: 2px solid #000; width: 10px; height: 10px; margin-top: 2px; margin-left: 2px; }
+        
         .popup-content { font-size: 13px; line-height: 1.5; min-width: 200px; }
         .popup-content h3 { margin: 0 0 8px 0; font-size: 15px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
         .score-badge { display: inline-block; padding: 3px 6px; color: white; border-radius: 4px; font-weight: bold; margin-bottom: 5px; }
@@ -22,43 +84,29 @@
         .bg-tier4 { background-color: #e74c3c; }
         .bg-tier5 { background-color: #8e44ad; }
         
-        .time-label {
-            background: rgba(255, 255, 255, 0.9);
-            border: 1px solid #666;
-            border-radius: 4px;
-            font-weight: bold;
-            font-size: 13px;
-            color: #333;
-            text-align: center;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-            padding: 4px 6px;
-        }
+        .time-label { background: rgba(255, 255, 255, 0.9); border: 1px solid #666; border-radius: 4px; font-weight: bold; font-size: 13px; color: #333; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.3); padding: 4px 6px; }
         .time-label .zone-name { font-size: 11px; color: #666; font-weight: normal; margin-bottom: 2px; }
 
         /* 행정기관 커스텀 아이콘 스타일 */
-        .office-icon {
-            font-size: 20px;
-            background: white;
-            border: 2px solid #2980b9;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-            line-height: 1;
-        }
-        .main-office-icon {
-            border-color: #8e44ad;
-            font-size: 22px;
-            width: 36px;
-            height: 36px;
-        }
+        .office-icon { font-size: 20px; background: white; border: 2px solid #2980b9; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.3); line-height: 1; }
+        .main-office-icon { border-color: #8e44ad; font-size: 22px; width: 36px; height: 36px; }
     </style>
 </head>
 <body>
-    <div id="map"></div>
+    <div id="map-container">
+        <div id="map"></div>
+    </div>
+    
+    <div id="sidebar">
+        <div class="sidebar-header">
+            <h3>🏢 발령지 목록</h3>
+            <p>항목을 클릭하면 지도로 이동합니다</p>
+        </div>
+        <ul id="office-list" class="office-list">
+            <!-- 리스트가 자바스크립트를 통해 동적으로 추가됩니다 -->
+        </ul>
+    </div>
+
     <script>
         var map = L.map('map').setView([37.3950, 127.1350], 12);
 
@@ -105,42 +153,63 @@
             marker.bindTooltip(complex.name, { permanent: false, direction: 'top' });
         });
 
-        // 3. 사회복지 공무원 발령지 (행정복지센터 및 시/구청) 마커
+        // 3. 사회복지 공무원 발령지 마커 및 사이드바 리스트 생성
         var officeIcon = L.divIcon({ className: 'office-icon', html: '🏤', iconSize: [30, 30], iconAnchor: [15, 15] });
         var mainOfficeIcon = L.divIcon({ className: 'office-icon main-office-icon', html: '🏢', iconSize: [36, 36], iconAnchor: [18, 18] });
 
         var offices = [
             // 시청 및 구청
-            { lat: 37.4200, lng: 127.1265, name: '성남시청', type: '시청 (본청)', icon: mainOfficeIcon },
-            { lat: 37.3827, lng: 127.1189, name: '분당구청', type: '구청', icon: mainOfficeIcon },
-            { lat: 37.4442, lng: 127.1350, name: '수정구청', type: '구청', icon: mainOfficeIcon },
-            { lat: 37.4360, lng: 127.1326, name: '중원구청', type: '구청', icon: mainOfficeIcon },
+            { lat: 37.4200, lng: 127.1265, name: '성남시청', type: '시청 (본청)', icon: mainOfficeIcon, desc: '복지 정책 및 행정 총괄' },
+            { lat: 37.3827, lng: 127.1189, name: '분당구청', type: '구청', icon: mainOfficeIcon, desc: '분당구 복지 업무 총괄' },
+            { lat: 37.4442, lng: 127.1350, name: '수정구청', type: '구청', icon: mainOfficeIcon, desc: '수정구 복지 업무 총괄' },
+            { lat: 37.4360, lng: 127.1326, name: '중원구청', type: '구청', icon: mainOfficeIcon, desc: '중원구 복지 업무 총괄' },
             
-            // 주요 임대단지 관할 동 행정복지센터 (최전선)
-            { lat: 37.3639, lng: 127.1158, name: '정자2동 행정복지센터', type: '관할: 한솔마을', icon: officeIcon },
-            { lat: 37.3524, lng: 127.1082, name: '금곡동 행정복지센터', type: '관할: 청솔마을', icon: officeIcon },
-            { lat: 37.3411, lng: 127.1070, name: '구미1동 행정복지센터', type: '관할: 하얀마을', icon: officeIcon },
-            { lat: 37.4150, lng: 127.1432, name: '야탑3동 행정복지센터', type: '관할: 목련마을', icon: officeIcon },
-            { lat: 37.4140, lng: 127.1650, name: '도촌동 행정복지센터', type: '관할: 도촌 휴먼시아', icon: officeIcon },
-            { lat: 37.4690, lng: 127.1430, name: '위례동 행정복지센터', type: '관할: 위례신도시', icon: officeIcon }
+            // 요주의 행정복지센터
+            { lat: 37.3639, lng: 127.1158, name: '정자2동 행정복지센터', type: '관할: 한솔마을', icon: officeIcon, desc: '분당 내 복지업무 최상위권' },
+            { lat: 37.3524, lng: 127.1082, name: '금곡동 행정복지센터', type: '관할: 청솔마을', icon: officeIcon, desc: '분당 남부 민원 집중 구역' },
+            { lat: 37.3411, lng: 127.1070, name: '구미1동 행정복지센터', type: '관할: 하얀마을', icon: officeIcon, desc: '출퇴근이 멀고 피로도 극심' },
+            { lat: 37.4150, lng: 127.1432, name: '야탑3동 행정복지센터', type: '관할: 목련마을', icon: officeIcon, desc: '분당 내 기피 1순위 중 하나' },
+            { lat: 37.4140, lng: 127.1650, name: '도촌동 행정복지센터', type: '관할: 도촌 휴먼시아', icon: officeIcon, desc: '대규모 산자락 임대단지 관할' },
+            { lat: 37.4690, lng: 127.1430, name: '위례동 행정복지센터', type: '관할: 위례 임대단지', icon: officeIcon, desc: '임대단지 세대가 많아 업무량 ⬆️' }
         ];
 
+        var sidebarList = document.getElementById('office-list');
+
         offices.forEach(function(office) {
+            // 마커 생성
             var marker = L.marker([office.lat, office.lng], { icon: office.icon }).addTo(map);
-            marker.bindPopup('<div class="popup-content"><b>' + office.name + '</b><br><span style="color:#2980b9;">' + office.type + '</span><br>사회복지 공무원 실제 발령지입니다.</div>');
+            marker.bindPopup('<div class="popup-content"><b>' + office.name + '</b><br><span style="color:#2980b9;">' + office.type + '</span><br>' + office.desc + '</div>');
             marker.bindTooltip(office.name, { permanent: false, direction: 'right', offset: [15, 0] });
+
+            // 사이드바 리스트 아이템 생성
+            var li = document.createElement('li');
+            li.className = 'office-item';
+            li.innerHTML = '<b>' + office.name + '</b><span>' + office.type + '</span><span class="desc">' + office.desc + '</span>';
+            
+            // 리스트 클릭 이벤트 (해당 마커로 지도 이동 및 팝업 열기)
+            li.onclick = function() {
+                map.flyTo([office.lat, office.lng], 15, {
+                    animate: true,
+                    duration: 0.8
+                });
+                // 애니메이션이 약간 진행된 후 팝업 띄우기
+                setTimeout(function() {
+                    marker.openPopup();
+                }, 800);
+            };
+            
+            sidebarList.appendChild(li);
         });
 
-        // 범례(Legend) 추가
+        // 범례(Legend)
         var legend = L.control({position: 'bottomright'});
         legend.onAdd = function (map) {
             var div = L.DomUtil.create('div', 'legend');
             div.innerHTML += '<h4>지도 기호 안내</h4>';
             div.innerHTML += '<hr style="margin:8px 0; border:0; border-top:1px solid #eee;">';
             div.innerHTML += '<div><i class="marker-icon"></i> <b style="color:#e74c3c;">임대단지 (복지수요↑)</b></div>';
-            div.innerHTML += '<div style="margin-top:5px; display:flex; align-items:center;"><span style="font-size:20px; margin-right:5px; display:inline-block; width:18px;">🏤</span> <b>동 행정복지센터</b> (임대단지 관할)</div>';
-            div.innerHTML += '<div style="margin-top:5px; display:flex; align-items:center;"><span style="font-size:20px; margin-right:5px; display:inline-block; width:18px;">🏢</span> <b>시청 / 구청</b> (총괄 부서)</div>';
-            div.innerHTML += '<div style="margin-top: 10px; font-size: 11px; color: #666;">※ 사회복지 공무원은 민간 복지관이 아닌<br>위의 <b>행정기관(관공서)</b>으로 발령받습니다.</div>';
+            div.innerHTML += '<div style="margin-top:5px; display:flex; align-items:center;"><span style="font-size:20px; margin-right:5px; display:inline-block; width:18px;">🏤</span> <b>행정복지센터</b></div>';
+            div.innerHTML += '<div style="margin-top:5px; display:flex; align-items:center;"><span style="font-size:20px; margin-right:5px; display:inline-block; width:18px;">🏢</span> <b>시청 / 구청</b></div>';
             return div;
         };
         legend.addTo(map);
