@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>성남시 사회복지직 발령지 종합 분석 맵 (미사 출퇴근 반영)</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        body { margin: 0; padding: 0; font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; }
+        #map { width: 100vw; height: 100vh; }
+        .legend { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.2); line-height: 1.5; z-index: 1000; position: absolute; bottom: 20px; right: 20px;}
+        .legend h4 { margin: 0 0 10px; font-size: 15px; color: #333; }
+        .legend i { width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.8; border-radius: 50%; }
+        .legend .marker-icon { background: #e74c3c; border: 2px solid #000; width: 10px; height: 10px; margin-top: 2px; margin-left: 2px; }
+        .popup-content { font-size: 13px; line-height: 1.5; min-width: 200px; }
+        .popup-content h3 { margin: 0 0 8px 0; font-size: 15px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+        .score-badge { display: inline-block; padding: 3px 6px; color: white; border-radius: 4px; font-weight: bold; margin-bottom: 5px; }
+        .bg-tier1 { background-color: #2ecc71; }
+        .bg-tier2 { background-color: #3498db; }
+        .bg-tier3 { background-color: #f39c12; }
+        .bg-tier4 { background-color: #e74c3c; }
+        .bg-tier5 { background-color: #8e44ad; }
+        
+        .time-label {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid #666;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 13px;
+            color: #333;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            padding: 4px 6px;
+        }
+        .time-label .zone-name { font-size: 11px; color: #666; font-weight: normal; margin-bottom: 2px; }
+
+        /* 행정기관 커스텀 아이콘 스타일 */
+        .office-icon {
+            font-size: 20px;
+            background: white;
+            border: 2px solid #2980b9;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            line-height: 1;
+        }
+        .main-office-icon {
+            border-color: #8e44ad;
+            font-size: 22px;
+            width: 36px;
+            height: 36px;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script>
+        var map = L.map('map').setView([37.3950, 127.1350], 12);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        var colors = {
+            t1: '#2ecc71', t2: '#3498db', t3: '#f39c12', t4: '#e74c3c', t5: '#8e44ad'
+        };
+
+        // 1. 기존 권역(Area) 데이터 그리기
+        var mapData = [
+            { lat: 37.3948, lng: 127.1111, color: colors.t1, radius: 1400, timeLabel: '🚗 약 40분', zoneName: '판교/북분당', content: '<h3>판교신도시 & 북분당 일반</h3><div class="score-badge bg-tier1">종합 9점 (1위)</div><br><b>업무환경:</b> 5/5<br><b>출퇴근:</b> 4/5<br>최고의 발령지입니다.' },
+            { lat: 37.4111, lng: 127.1450, color: colors.t2, radius: 1000, timeLabel: '🚗 약 35분', zoneName: '야탑/이매', content: '<h3>야탑/이매 일반구역</h3><div class="score-badge bg-tier2">종합 8.5점 (2위)</div><br><b>업무환경:</b> 4/5<br><b>출퇴근:</b> 4.5/5<br>미사에서 분당 중 가장 가깝습니다.' },
+            { lat: 37.4425, lng: 127.1370, color: colors.t4, radius: 1600, timeLabel: '🚗 약 30분', zoneName: '본시가지', content: '<h3>수정구 / 중원구 (본시가지)</h3><div class="score-badge bg-tier4">종합 6점</div><br><b>업무환경:</b> 1/5 (매우 힘듦)<br><b>출퇴근:</b> 5/5<br>업무 강도가 극상입니다.' },
+            { lat: 37.3780, lng: 127.1250, color: colors.t3, radius: 1300, timeLabel: '🚗 약 50분', zoneName: '남분당 일반', content: '<h3>남분당 일반단지</h3><div class="score-badge bg-tier3">종합 7점</div><br><b>업무환경:</b> 5/5<br><b>출퇴근:</b> 2/5<br>미사에서 거리가 멀고 정체가 심합니다.' },
+            { lat: 37.3592, lng: 127.1130, color: colors.t5, radius: 1200, timeLabel: '🚗 50~60분', zoneName: '남분당 임대', content: '<h3>분당 남부 임대밀집</h3><div class="score-badge bg-tier5">종합 4점 (최악)</div><br><b>업무환경:</b> 2/5<br><b>출퇴근:</b> 2/5<br>복지 업무량마저 최상위권인 곳입니다.' }
+        ];
+
+        mapData.forEach(function(area) {
+            var circle = L.circle([area.lat, area.lng], {
+                color: area.color, fillColor: area.color, fillOpacity: 0.35, radius: area.radius
+            }).addTo(map);
+            circle.bindTooltip('<div class="zone-name">' + area.zoneName + '</div>' + area.timeLabel, { permanent: true, direction: 'center', className: 'time-label' }).openTooltip();
+        });
+
+        // 2. 임대단지 마커 (빨간 점)
+        var rentalComplexes = [
+            { lat: 37.3644, lng: 127.1171, name: '한솔마을 7단지' },
+            { lat: 37.3503, lng: 127.1132, name: '청솔마을 6단지' },
+            { lat: 37.3414, lng: 127.1129, name: '하얀마을 6단지' },
+            { lat: 37.4116, lng: 127.1432, name: '목련마을 1단지' },
+            { lat: 37.4124, lng: 127.1645, name: '도촌 휴먼시아' },
+            { lat: 37.4206, lng: 127.1352, name: '여수동 임대단지' },
+            { lat: 37.4646, lng: 127.1425, name: '위례 임대단지' }
+        ];
+
+        rentalComplexes.forEach(function(complex) {
+            var marker = L.circleMarker([complex.lat, complex.lng], {
+                radius: 6, fillColor: "#e74c3c", color: "#000", weight: 2, opacity: 1, fillOpacity: 1
+            }).addTo(map);
+            marker.bindTooltip(complex.name, { permanent: false, direction: 'top' });
+        });
+
+        // 3. 사회복지 공무원 발령지 (행정복지센터 및 시/구청) 마커
+        var officeIcon = L.divIcon({ className: 'office-icon', html: '🏤', iconSize: [30, 30], iconAnchor: [15, 15] });
+        var mainOfficeIcon = L.divIcon({ className: 'office-icon main-office-icon', html: '🏢', iconSize: [36, 36], iconAnchor: [18, 18] });
+
+        var offices = [
+            // 시청 및 구청
+            { lat: 37.4200, lng: 127.1265, name: '성남시청', type: '시청 (본청)', icon: mainOfficeIcon },
+            { lat: 37.3827, lng: 127.1189, name: '분당구청', type: '구청', icon: mainOfficeIcon },
+            { lat: 37.4442, lng: 127.1350, name: '수정구청', type: '구청', icon: mainOfficeIcon },
+            { lat: 37.4360, lng: 127.1326, name: '중원구청', type: '구청', icon: mainOfficeIcon },
+            
+            // 주요 임대단지 관할 동 행정복지센터 (최전선)
+            { lat: 37.3639, lng: 127.1158, name: '정자2동 행정복지센터', type: '관할: 한솔마을', icon: officeIcon },
+            { lat: 37.3524, lng: 127.1082, name: '금곡동 행정복지센터', type: '관할: 청솔마을', icon: officeIcon },
+            { lat: 37.3411, lng: 127.1070, name: '구미1동 행정복지센터', type: '관할: 하얀마을', icon: officeIcon },
+            { lat: 37.4150, lng: 127.1432, name: '야탑3동 행정복지센터', type: '관할: 목련마을', icon: officeIcon },
+            { lat: 37.4140, lng: 127.1650, name: '도촌동 행정복지센터', type: '관할: 도촌 휴먼시아', icon: officeIcon },
+            { lat: 37.4690, lng: 127.1430, name: '위례동 행정복지센터', type: '관할: 위례신도시', icon: officeIcon }
+        ];
+
+        offices.forEach(function(office) {
+            var marker = L.marker([office.lat, office.lng], { icon: office.icon }).addTo(map);
+            marker.bindPopup('<div class="popup-content"><b>' + office.name + '</b><br><span style="color:#2980b9;">' + office.type + '</span><br>사회복지 공무원 실제 발령지입니다.</div>');
+            marker.bindTooltip(office.name, { permanent: false, direction: 'right', offset: [15, 0] });
+        });
+
+        // 범례(Legend) 추가
+        var legend = L.control({position: 'bottomright'});
+        legend.onAdd = function (map) {
+            var div = L.DomUtil.create('div', 'legend');
+            div.innerHTML += '<h4>지도 기호 안내</h4>';
+            div.innerHTML += '<hr style="margin:8px 0; border:0; border-top:1px solid #eee;">';
+            div.innerHTML += '<div><i class="marker-icon"></i> <b style="color:#e74c3c;">임대단지 (복지수요↑)</b></div>';
+            div.innerHTML += '<div style="margin-top:5px; display:flex; align-items:center;"><span style="font-size:20px; margin-right:5px; display:inline-block; width:18px;">🏤</span> <b>동 행정복지센터</b> (임대단지 관할)</div>';
+            div.innerHTML += '<div style="margin-top:5px; display:flex; align-items:center;"><span style="font-size:20px; margin-right:5px; display:inline-block; width:18px;">🏢</span> <b>시청 / 구청</b> (총괄 부서)</div>';
+            div.innerHTML += '<div style="margin-top: 10px; font-size: 11px; color: #666;">※ 사회복지 공무원은 민간 복지관이 아닌<br>위의 <b>행정기관(관공서)</b>으로 발령받습니다.</div>';
+            return div;
+        };
+        legend.addTo(map);
+
+    </script>
+</body>
+</html>
